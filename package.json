@@ -25,3 +25,12 @@
   }
 }
 
+
+
+
+
+"scripts": {
+  "start": "node src/app.js",
+  "migrate": "psql \"$DATABASE_URL\" -f schema.sql",
+  "postinstall": "npm run migrate"
+}
