@@ -1,6 +1,6 @@
 -- Utilisateurs
 create table if not exists users (
-  id uuid primary key default gen_random_uuid(),
+  id SERIAL primary key,
   full_name text not null,
   email text unique not null,
   phone text,
