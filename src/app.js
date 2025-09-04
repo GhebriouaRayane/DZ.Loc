@@ -1,7 +1,6 @@
 import "dotenv/config.js";
 import express from "express";
 import helmet from "helmet";
-import cors from "cors";
 import morgan from "morgan";
 import rateLimit from "express-rate-limit";
 import cookieParser from "cookie-parser";
@@ -15,44 +14,37 @@ import uploadRoutes from "./routes/uploads.js";
 
 const app = express();
 
+// ⚡ Bloc CORS manuel (mettre tout en haut, avant helmet et autres middlewares)
+const allowedOrigins = ["https://dzloc.vercel.app"]; // ton frontend Vercel
+
+app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    if (allowedOrigins.includes(origin)) {
+        res.header("Access-Control-Allow-Origin", origin);
+        res.header("Access-Control-Allow-Credentials", "true");
+        res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+        res.header("Access-Control-Allow-Headers", "Content-Type,Authorization");
+    }
+
+    // gérer la requête OPTIONS (preflight)
+    if (req.method === "OPTIONS") {
+        return res.sendStatus(200);
+    }
+    next();
+});
+
 // Sécurité & middlewares
 app.use(helmet());
-
-
-// Configuration CORS sécurisée pour ton frontend Vercel
-const allowedOrigins = process.env.CORS_ORIGIN?.split(",") || [];
-
-app.use(cors({
-    origin: function(origin, callback){
-        if(!origin) return callback(null, true);
-        if(allowedOrigins.indexOf(origin) === -1){
-            const msg = `La politique CORS bloque cette origine: ${origin}`;
-            return callback(new Error(msg), false);
-        }
-        return callback(null, true);
-    },
-    credentials: true,
-    methods: ['GET','POST','PUT','DELETE','OPTIONS'],
-    allowedHeaders: ['Content-Type','Authorization']
-}));
-
-app.options('*', cors({
-    origin: allowedOrigins,
-    credentials: true,
-    methods: ['GET','POST','PUT','DELETE','OPTIONS'],
-    allowedHeaders: ['Content-Type','Authorization']
-}));
-
-
-
 app.use(express.json({ limit: "2mb" }));
 app.use(cookieParser());
 app.use(morgan("tiny"));
 app.set("trust proxy", 1);
 app.use(rateLimit({ windowMs: 60 * 1000, max: 120 }));
 
+// Route de test
 app.get("/", (req, res) => res.json({ ok: true, name: "DZLoc API" }));
 
+// Routes principales
 app.use("/auth", authRoutes);
 app.use("/users", userRoutes);
 app.use("/properties", propertyRoutes);
@@ -62,4 +54,3 @@ app.use("/uploads", uploadRoutes);
 
 const port = process.env.PORT || 10000;
 app.listen(port, () => console.log("API running on", port));
-
